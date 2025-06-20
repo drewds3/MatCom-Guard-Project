@@ -15,6 +15,9 @@ volatile gboolean escaneo_activo = TRUE;
 // Variable del main.c
 extern GtkWidget *textview_resultados;
 
+// Variable global para controlar USBs
+char **lista_global = NULL;
+
 // Funcion para actualizar textview desde el hilo
 static gboolean append_textview_from_thread(gpointer data)
 {
@@ -31,7 +34,7 @@ static gboolean append_textview_from_thread(gpointer data)
 int contar_dispositivos()
 {
     int count = 0;
-    DIR *dir = opendir("/media/");
+    DIR *dir = opendir("/media/Andriu/");
     struct dirent *entry;
 
     while ((entry = readdir(dir)) != NULL)
@@ -43,7 +46,7 @@ int contar_dispositivos()
             count++;
         }
     }
-
+    
     return count;
 }
 
@@ -61,7 +64,7 @@ char ** detectar_dispositivos_usb(cantidad)
     //Se reserva la memoria a usar en la lista
    // Variables globales
    char **lista_dispositivos = malloc(sizeof(char *) * cantidad);
-    
+   
     if(lista_dispositivos == NULL) return 0;
 
     char ruta[256];
@@ -80,9 +83,10 @@ char ** detectar_dispositivos_usb(cantidad)
 
     int i = 0; 
 
-    printf("Dispositivos conectados:\n");
+    //printf("Dispositivos conectados:\n");
     while ((entry = readdir(dir)) != NULL)
-    {
+    {  
+        
         // Se omiten el directorio actual y su padre
         if (strcmp(entry->d_name, ".") != 0 
         && strcmp(entry->d_name, "..") != 0)
@@ -94,9 +98,9 @@ char ** detectar_dispositivos_usb(cantidad)
 
             printf("%s\n", lista_dispositivos[i]);
 
-            char mensaje[512];
-            snprintf(mensaje, sizeof(mensaje), "USB Detectado: %s\n", lista_dispositivos[i]);
-            g_idle_add(append_textview_from_thread, g_strdup(mensaje));
+            //char mensaje[512];
+            //snprintf(mensaje, sizeof(mensaje), "USB Detectado: %s\n", lista_dispositivos[i]);
+            //g_idle_add(append_textview_from_thread, g_strdup(mensaje));
 
             if(lista_dispositivos[i] == NULL)
             {
@@ -107,7 +111,6 @@ char ** detectar_dispositivos_usb(cantidad)
             i++;
         }
     }
-
     closedir(dir);
     return lista_dispositivos;
 }
@@ -378,18 +381,98 @@ void comparar_baselines(const char *inicial, const char *actual)
     free(b2);
 }
 
+//--------------------------Manejo de listas de nombres de USB--------------------------------------
+// Verifica si el dispositivo usb esta en la lista global
+int existeEnLista(const char *str, char **lista, int tam) {
+    for (int i = 0; i < tam; i++) {
+        if (strcmp(str, lista[i]) == 0) return 1;
+    }
+    return 0;
+}
+
+// Libera una lista de strings
+void liberarLista(char **lista, int tam) {
+    for (int i = 0; i < tam; i++) {
+        free(lista[i]);
+    }
+    free(lista);
+}
+
+// Se actualiza la lista global
+char **copiarLista(char **origen, int tam) {
+    char **nuevaLista = malloc(tam * sizeof(char*));
+    for (int i = 0; i < tam; i++) {
+        nuevaLista[i] = malloc(strlen(origen[i]) + 1);
+        strcpy(nuevaLista[i], origen[i]);
+    }
+    return nuevaLista;
+}
+
+// Compara la lista local con la global y actualiza la global
+void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **localLista, int tamLocal, bool *not_zero) 
+{   
+    
+    if(not_zero)
+    {
+        printf("caaaa\n");
+        // Buscar nuevos elementos (en local pero no en global)
+        for (int i = 0; i < tamLocal; i++) 
+        {
+            if (!existeEnLista(localLista[i], *globalLista, *tamGlobal)) 
+            {
+                printf("USB Detectado: %s\n", localLista[i]);
+            
+                char mensaje[512];
+                snprintf(mensaje, sizeof(mensaje), "USB Detectado: %s\n", localLista[i]);
+                g_idle_add(append_textview_from_thread, g_strdup(mensaje));
+            }
+        }
+
+        // Buscar eliminados (en global pero no en local)
+        for (int i = 0; i < *tamGlobal; i++) 
+        {
+            if (!existeEnLista((*globalLista)[i], localLista, tamLocal)) 
+            {
+                printf("USB Expulsado: %s\n", (*globalLista)[i]);
+            
+                char mensaje[512];
+                snprintf(mensaje, sizeof(mensaje), "USB Expulsado: %s\n", (*globalLista)[i]);
+                g_idle_add(append_textview_from_thread, g_strdup(mensaje));
+            }
+        }
+    }
+    
+    // Reemplazar globalLista por copia profunda de localLista
+    liberarLista(*globalLista, *tamGlobal);
+    if(tamLocal != 0)
+    {
+        *globalLista = copiarLista(localLista, tamLocal);
+        *not_zero = true; 
+    }     
+    
+    printf("aaaa\n");
+    *tamGlobal = tamLocal;
+}
+
 //----------------------------Hilo USB------------------------------------------
 // Metodo general del hilo
 void *thread_scanner_usb(void *arg)
 {
     bool baselines_guardadas = false;
-
+    bool not_zero = false;
     while(escaneo_activo)
     {
         // Obtener lista de dispositivos
         int cantidad = contar_dispositivos();
         char **lista_dispositivos = detectar_dispositivos_usb(cantidad);
+        printf("caaa: %d\n", cantidad);
+        int tamGlobal = 0;
         
+        // Detectar nuevos conectados y desconectados
+        if(not_zero) tamGlobal = sizeof(lista_global) / sizeof(lista_global[0]);
+        printf("princ\n");
+        compararListasYActualizar(&lista_global, &tamGlobal, lista_dispositivos, cantidad, &not_zero);
+        printf("fin\n");
         // Por cada USB, manejar las baselines en formato JSON
         for(int i = 0; i < cantidad; i++)
         {   
@@ -418,13 +501,20 @@ void *thread_scanner_usb(void *arg)
                 snprintf(archivo_actual, sizeof(archivo_actual), "baselines_actuales/baseline_actual_%d.json", i);
                 guardar_baseline(ruta_dispositivo, archivo_actual);
 
+                // Se comparan las baselines
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Comparacion iniciada entre %s y %s\n", archivo_base, archivo_actual);
                 g_idle_add(append_textview_from_thread, g_strdup(msg));
 
                 comparar_baselines(archivo_base, archivo_actual);
+                
+                // Se actualiza la baseline inicial para que no vuelva a mostrar las mismas advertencias
+                char comando[256];
+                snprintf(comando, sizeof(comando), "cp %s %s", archivo_actual, archivo_base);
+                system(comando);
 
-                snprintf(msg, sizeof(msg), "Comparacion finalizada entre %s y %s\n", archivo_base, archivo_actual);
+                // Se notifica en la interfaz
+                snprintf(msg, sizeof(msg), "Comparacion finalizada entre %s y %s\n\n", archivo_base, archivo_actual);
                 g_idle_add(append_textview_from_thread, g_strdup(msg));
             }
         }
