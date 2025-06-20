@@ -1,0 +1,186 @@
+[
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/autorun.inf",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1736626834, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/autorun.inf/Protection for Autorun",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1736626834, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/pip.ini",
+  "tipo": "Archivo",
+  "tamano": 225, 
+  "modificado": 1736797266, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard",
+  "tipo": "Carpeta",
+  "tamano": 4096, 
+  "modificado": 1750377804, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/.vscode",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1748489677, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/.vscode/c_cpp_properties.json",
+  "tipo": "Archivo",
+  "tamano": 1294, 
+  "modificado": 1748490145, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/.vscode/tasks.json",
+  "tipo": "Archivo",
+  "tamano": 527, 
+  "modificado": 1747582795, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/a.out",
+  "tipo": "Archivo",
+  "tamano": 27344, 
+  "modificado": 1750377804, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/baseline.json",
+  "tipo": "Archivo",
+  "tamano": 1526, 
+  "modificado": 1748403169, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/baselines_actuales",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1750297221, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/baselines_iniciales",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1750371646, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/baselines_iniciales/baseline_0.json",
+  "tipo": "Archivo",
+  "tamano": 0, 
+  "modificado": 1750371832, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/estado_actual.json",
+  "tipo": "Archivo",
+  "tamano": 1517, 
+  "modificado": 1748403523, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/main.c",
+  "tipo": "Archivo",
+  "tamano": 2754, 
+  "modificado": 1750377795, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/usb_scanner.c",
+  "tipo": "Archivo",
+  "tamano": 12417, 
+  "modificado": 1750377801, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/Proyecto MatCom Guard/usb_scanner.h",
+  "tipo": "Archivo",
+  "tamano": 89, 
+  "modificado": 1750377785, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1745594844, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information/Chkdsk",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1750381961, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information/Chkdsk/Chkdsk20250620011241.log",
+  "tipo": "Archivo",
+  "tamano": 4096, 
+  "modificado": 1750381961, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information/IndexerVolumeGuid",
+  "tipo": "Archivo",
+  "tamano": 76, 
+  "modificado": 1681971225, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information/KES-21-8",
+  "tipo": "Carpeta",
+  "tamano": 0, 
+  "modificado": 1745594844, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/System Volume Information/WPSettings.dat",
+  "tipo": "Archivo",
+  "tamano": 12, 
+  "modificado": 1681971634, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+},
+  {
+  "ruta": "/media/Andriu/3E563F33563EEB73/VSCodeUserSetup-x64-1.69.2.exe",
+  "tipo": "Archivo",
+  "tamano": 83098016, 
+  "modificado": 1658304757, 
+  "permisos": 1750, 
+  "uid": -1755102128 
+}
+]
