@@ -15,28 +15,41 @@ volatile gboolean escaneo_activo = TRUE;
 // Variable del main.c
 extern GtkWidget *textview_resultados;
 
-// Variable global para controlar USBs
+// Variables globales para controlar USBs
 char **lista_global = NULL;
+int tamGlobal = 0;
 
+//-----------------Seccion para mandar actualizar la interfaz--------------------
 // Funcion para actualizar textview desde el hilo
 static gboolean append_textview_from_thread(gpointer data)
 {
     const char *mensaje = (const char *)data;
+
+    // Obtiene la direccion real en memoria donde se guarda el texto a mostrar
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview_resultados));
+    
+    // Se obtiene la ultima posicion
     GtkTextIter end;
     gtk_text_buffer_get_end_iter(buffer, &end);
+
+    // Se inserta
     gtk_text_buffer_insert(buffer, &end, mensaje, -1);
     
     free(data);
-    return FALSE;
+    return FALSE; // FALSE para que no se vuelva a ejecutar
 }
 
+//------------------------Escaneo de dispositivos USB--------------------------
+// Cuenta los dispositivos
 int contar_dispositivos()
 {
     int count = 0;
+
+    // Se abre la carpeta
     DIR *dir = opendir("/media/Andriu/");
     struct dirent *entry;
 
+    //
     while ((entry = readdir(dir)) != NULL)
     {
         // Se omiten el directorio actual y su padre
@@ -46,30 +59,32 @@ int contar_dispositivos()
             count++;
         }
     }
-    
     return count;
 }
 
-// Metodo para escanear dispositivos conectados
-char ** detectar_dispositivos_usb(cantidad)
+// Escaneo de dispositivos conectados
+char ** detectar_dispositivos_usb(int cantidad_esperada, int *cantidad_real)
 {
+    // Se extrae el nombre del usuario
     const char *usuario = getenv("USER");
 
     if(usuario == NULL)
     {
         perror("No se pudo obtener el nombre de usuario");
-        return 0;
+        return NULL;
     }
 
     //Se reserva la memoria a usar en la lista
-   // Variables globales
-   char **lista_dispositivos = malloc(sizeof(char *) * cantidad);
+   char **lista_dispositivos = malloc(sizeof(char *) * cantidad_esperada);
    
-    if(lista_dispositivos == NULL) return 0;
+    if(lista_dispositivos == NULL) return NULL;
 
+    // Se crea la direccion
     char ruta[256];
     snprintf(ruta, sizeof(ruta), "/media/%s", usuario);
     
+    // Se crean las variables del directorio abierto
+    // y la entrada leida dentro del directorio
     DIR *dir;
     struct dirent *entry;
     
@@ -78,12 +93,14 @@ char ** detectar_dispositivos_usb(cantidad)
     if (!dir)
     {
         perror("No se pudo abrir el directorio de montaje");
-        return 0;
+        return NULL;
     }
 
-    int i = 0; 
+    // Se extrae el nombre de los dispositivos conectados
+    printf("Dispositivos conectados:\n");
+    
+    int i = 0;
 
-    //printf("Dispositivos conectados:\n");
     while ((entry = readdir(dir)) != NULL)
     {  
         
@@ -93,32 +110,37 @@ char ** detectar_dispositivos_usb(cantidad)
         {
             printf("- %s\n", entry->d_name);
 
-            // Agregar el dispositivo a la lista
+            // Agregar el nombre del dispositivo a la lista
             lista_dispositivos[i] = strdup(entry->d_name);
 
-            printf("%s\n", lista_dispositivos[i]);
-
-            //char mensaje[512];
-            //snprintf(mensaje, sizeof(mensaje), "USB Detectado: %s\n", lista_dispositivos[i]);
-            //g_idle_add(append_textview_from_thread, g_strdup(mensaje));
+            printf("- %s\n", lista_dispositivos[i]);
 
             if(lista_dispositivos[i] == NULL)
             {
-                perror("Error al asignar memoria");
+                perror("Error al asignar nombre de dispositivo");
                 closedir(dir);
             }
 
             i++;
         }
     }
+
+    // Se captura la cantidad real de dispositivos conectados
+    // por si desconectan una memoria a mitad de iteracion
+    *cantidad_real = i; 
+
     closedir(dir);
     return lista_dispositivos;
 }
 
+//--------------------------Informacion de elementos----------------------------
+// Para extraer la informacion de todos los elementos en el dispositivo
 void escanear_recursivo(const char *ruta, FILE *json)
 {
     // Se accede al dispositivo
     DIR *dir;
+    struct dirent *entry;
+
     dir = opendir(ruta);
     if (!dir)
     {
@@ -127,8 +149,6 @@ void escanear_recursivo(const char *ruta, FILE *json)
     }
     
     // Se accede a todos los archivos y carpetas
-    struct dirent *entry;
-
     while ((entry = readdir(dir)) != NULL)
     {
         // Se omiten el actual y padre para evitar bucles
@@ -145,6 +165,7 @@ void escanear_recursivo(const char *ruta, FILE *json)
             continue;
         }
 
+        // Se declara la variable para obtener informacion de los archivos
         struct stat st;
         if (stat(ruta_completa, &st) != 0)
         {
@@ -152,7 +173,7 @@ void escanear_recursivo(const char *ruta, FILE *json)
             continue;
         }
 
-        // Se imprimen recursivamente todos los elementos en el dispositivo
+        // Se guardan recursivamente todos los elementos en el dispositivo y su informacion
         if (S_ISDIR(st.st_mode))
         {
             printf("Carpeta: %s\n", ruta_completa);
@@ -174,6 +195,7 @@ void escanear_recursivo(const char *ruta, FILE *json)
     closedir(dir);
 }
 
+// Para guardar el archivo json correctamente
 void guardar_archivo_json(FILE *json, const char *ruta, struct stat *info, const char *tipo)
 {
     fprintf(json,
@@ -192,6 +214,7 @@ void guardar_archivo_json(FILE *json, const char *ruta, struct stat *info, const
         info->st_uid);
 }
 
+// Para guardar la informacion de los archivos en un .json
 void guardar_baseline(const char *ruta, const char *Json)
 {
     FILE *json = fopen(Json, "w");
@@ -209,6 +232,7 @@ void guardar_baseline(const char *ruta, const char *Json)
     fclose(json);
 }
 
+// Para resetear el .json
 void resetear_baseline(const char *ruta, const char *Json)
 {
     FILE *json = fopen(Json, "w");
@@ -234,7 +258,7 @@ typedef struct
 } InfoArchivo;
 
 // Para convertir un archivo .json en una lista de estructuras
-InfoArchivo *leer_json(const char *json, int *cantidad)
+InfoArchivo *leer_json(const char *json, int *cantidad_esperada)
 {
     // Se lee el archivo .json.
     FILE *archivoJSON = fopen(json, "r");
@@ -282,7 +306,7 @@ InfoArchivo *leer_json(const char *json, int *cantidad)
         strcpy(lista[i].tipo, cJSON_GetObjectItem(item, "tipo")->valuestring);
         lista[i].tamano = cJSON_GetObjectItem(item, "tamano")->valuedouble;
         lista[i].modificado = cJSON_GetObjectItem(item, "modificado")->valuedouble;
-        lista[i].permisos= cJSON_GetObjectItem(item, "permisos")->valueint;
+        lista[i].permisos = cJSON_GetObjectItem(item, "permisos")->valueint;
         lista[i].uid = cJSON_GetObjectItem(item, "uid")->valueint;
     }
     
@@ -290,8 +314,8 @@ InfoArchivo *leer_json(const char *json, int *cantidad)
     cJSON_Delete(jsonParseado);
     free(contenido);
 
-    // Se guarda la la cantidad de estructuras en un puntero para usarse mas adelante
-    *cantidad = n;  
+    // Se guarda la cantidad_esperada de estructuras en un puntero para usarse mas adelante
+    *cantidad_esperada = n;  
     return lista;
 }
 
@@ -382,40 +406,47 @@ void comparar_baselines(const char *inicial, const char *actual)
 }
 
 //--------------------------Manejo de listas de nombres de USB--------------------------------------
-// Verifica si el dispositivo usb esta en la lista global
-int existeEnLista(const char *str, char **lista, int tam) {
-    for (int i = 0; i < tam; i++) {
-        if (strcmp(str, lista[i]) == 0) return 1;
+// Verifica si un dispositivo usb esta en otra lista
+int existeEnLista(const char *str, char **lista, int tam) 
+{
+    for (int i = 0; i < tam; i++) 
+    {
+        if (strcmp(str, lista[i]) == 0) 
+        return 1;
     }
+    
     return 0;
 }
 
-// Libera una lista de strings
-void liberarLista(char **lista, int tam) {
-    for (int i = 0; i < tam; i++) {
-        free(lista[i]);
-    }
+// Libera una lista de strings (nombres de dispositivos)
+void liberarLista(char **lista, int tam) 
+{
+    for (int i = 0; i < tam; i++) 
+    free(lista[i]);
+    
     free(lista);
 }
 
 // Se actualiza la lista global
-char **copiarLista(char **origen, int tam) {
+char **copiarLista(char **origen, int tam) 
+{
     char **nuevaLista = malloc(tam * sizeof(char*));
-    for (int i = 0; i < tam; i++) {
+    
+    for (int i = 0; i < tam; i++) 
+    {
         nuevaLista[i] = malloc(strlen(origen[i]) + 1);
         strcpy(nuevaLista[i], origen[i]);
     }
+
     return nuevaLista;
 }
 
 // Compara la lista local con la global y actualiza la global
 void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **localLista, int tamLocal, bool *not_zero) 
 {   
-    
     if(not_zero)
     {
-        printf("caaaa\n");
-        // Buscar nuevos elementos (en local pero no en global)
+        // Buscar nuevos elementos (por cada local buscar en global)
         for (int i = 0; i < tamLocal; i++) 
         {
             if (!existeEnLista(localLista[i], *globalLista, *tamGlobal)) 
@@ -428,7 +459,7 @@ void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **local
             }
         }
 
-        // Buscar eliminados (en global pero no en local)
+        // Buscar eliminados (por cada en global buscar en local)
         for (int i = 0; i < *tamGlobal; i++) 
         {
             if (!existeEnLista((*globalLista)[i], localLista, tamLocal)) 
@@ -442,15 +473,17 @@ void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **local
         }
     }
     
-    // Reemplazar globalLista por copia profunda de localLista
+    // Se libera memoria
     liberarLista(*globalLista, *tamGlobal);
+    *globalLista = NULL; // Para evitar doble free()
+
+    // Hacer copia profunda en la lista global de la lista actual (local)
     if(tamLocal != 0)
     {
         *globalLista = copiarLista(localLista, tamLocal);
         *not_zero = true; 
     }     
     
-    printf("aaaa\n");
     *tamGlobal = tamLocal;
 }
 
@@ -458,33 +491,36 @@ void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **local
 // Metodo general del hilo
 void *thread_scanner_usb(void *arg)
 {
-    bool baselines_guardadas = false;
-    bool not_zero = false;
+    // Booleanos necesarios
+    bool baselines_guardadas = false; // Para saber si ya hay una baseline inicial
+    bool not_zero = false;  // Para evitar violacion de segmento con el tamano de la lista local
+    escaneo_activo = TRUE;  // Para salir del while       
+
+    // Bucle de escaneo hasta que se presione el boton de detener
     while(escaneo_activo)
     {
-        // Obtener lista de dispositivos
-        int cantidad = contar_dispositivos();
-        char **lista_dispositivos = detectar_dispositivos_usb(cantidad);
-        printf("caaa: %d\n", cantidad);
-        int tamGlobal = 0;
+        // Obtener lista de dispositivos y su tamano
+        int cantidad_esperada = contar_dispositivos();
+        int cantidad_real = 0;
+        char **lista_dispositivos = detectar_dispositivos_usb(cantidad_esperada, &cantidad_real);
         
-        // Detectar nuevos conectados y desconectados
-        if(not_zero) tamGlobal = sizeof(lista_global) / sizeof(lista_global[0]);
-        printf("princ\n");
-        compararListasYActualizar(&lista_global, &tamGlobal, lista_dispositivos, cantidad, &not_zero);
-        printf("fin\n");
+        // Detectar nuevos dispositivos USB conectados y desconectados
+        compararListasYActualizar(&lista_global, &tamGlobal, lista_dispositivos, cantidad_esperada, &not_zero);
+        
         // Por cada USB, manejar las baselines en formato JSON
-        for(int i = 0; i < cantidad; i++)
-        {   
-            char archivo_base[256];
-            snprintf(archivo_base, sizeof(archivo_base), "baselines_iniciales/baseline_%d.json", i);
-            
+        for(int i = 0; i < cantidad_esperada; i++)
+        {    
+            // Se obtiene la direccion de cada dispositivo
             const char *usuario = getenv("USER");
             
             char ruta_dispositivo[256];
             snprintf(ruta_dispositivo, sizeof(ruta_dispositivo), "/media/%s/%s", usuario, lista_dispositivos[i]);
             printf("%s\n", ruta_dispositivo);
-
+            
+            // Se crea la direccion del baseline inicial (o anterior)
+            char archivo_base[256];
+            snprintf(archivo_base, sizeof(archivo_base), "baselines_iniciales/baseline_%d.json", i);
+            
             if(!baselines_guardadas)
             {
                 // Crear la baseline inicial
@@ -519,14 +555,11 @@ void *thread_scanner_usb(void *arg)
             }
         }
 
-        baselines_guardadas = true;
-
+        baselines_guardadas = true; // Ya se guardo al menos una vez
+        
         // Liberar memoria de la lista
-        for(int i = 0; i < cantidad; i++)
-        free(lista_dispositivos[i]);
-
-        free(lista_dispositivos);
-
+        liberarLista(lista_dispositivos, cantidad_real);
+        
         // Esperar 60 segundos
         for (int t = 0; t < 5 && escaneo_activo; t++)
         {
@@ -534,6 +567,7 @@ void *thread_scanner_usb(void *arg)
         }
     }
 
+    // Ultimas lineas para cuando finalice el codigo
     baselines_guardadas = false;
 
     char mensaje[256];
