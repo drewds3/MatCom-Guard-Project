@@ -139,8 +139,10 @@ void print_report() {
     }
 }
 
-void scan_and_report()
+void *scan_and_report(void *arg)
 {
     scan_local_ports(1, 1024);
     print_report();
+
+    return NULL;
 }

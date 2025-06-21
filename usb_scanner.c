@@ -485,6 +485,8 @@ void compararListasYActualizar(char ***globalLista, int *tamGlobal, char **local
     }     
     
     *tamGlobal = tamLocal;
+
+    if(*tamGlobal == 0) g_idle_add(append_textview_from_thread, g_strdup("No hay dispositivos USB conectados.\n"));
 }
 
 //----------------------------Hilo USB------------------------------------------
