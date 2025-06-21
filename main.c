@@ -1,5 +1,6 @@
 #include "usb_scanner.h"
 #include "local_port_scanner.h"
+#include "processes_monitoring.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
@@ -47,13 +48,10 @@ GtkWidget *textview_log = NULL;
 // Funcion para el escaneo de puertos locales
 static void iniciar_escaneo_puertos(GtkWidget *widget, gpointer data)
 {
-    printf("ww\n");
     if(!hilo_lp)
     {
-        printf("sa\n");
         hilo_lp = g_thread_new("escaneo_lp", scan_and_report, NULL);
         g_thread_join(hilo_lp);
-        printf("111\n");
         hilo_lp = NULL;
     }
 }
@@ -71,7 +69,7 @@ static void iniciar_escaneo_procesos(GtkWidget *widget, gpointer data)
 {
     if(!hilo_pr)
     {
-        hilo_pr = g_thread_new("escaneo_pr", NULL, NULL); // Falta cambiar el 1er NULL por el metodo
+        hilo_pr = g_thread_new("escaneo_pr", monitor_processes, NULL); // Falta cambiar el 1er NULL por el metodo
         g_thread_join(hilo_pr);
         hilo_pr = NULL;
     }
@@ -82,7 +80,7 @@ void detener_escaneo_procesos(GtkButton *btn, gpointer use_data)
 {
     if(hilo_pr)
     {
-                                // <----- Aqui va se llamara metodo que detendra el escaneo
+        stop_monitoring_processes();
         g_thread_join(hilo_pr);
         hilo_pr = NULL;
     }

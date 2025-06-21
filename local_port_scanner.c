@@ -124,6 +124,10 @@ void scan_local_ports(int inicio, int fin)
 
 
 void print_report() {
+    // Se limpia el buffer
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview_log);
+    gtk_text_buffer_set_text(buffer, "", -1);
+
     // Línea 1: título del reporte
     g_idle_add(append_textview_from_thread, g_strdup("---- Reporte de Puertos Escaneados ----\n"));
 
@@ -141,6 +145,7 @@ void print_report() {
 
 void *scan_and_report(void *arg)
 {
+    total_resultados = 0;  // se reinicia el conteo para evitar duplicados
     scan_local_ports(1, 1024);
     print_report();
 
