@@ -43,13 +43,25 @@ static gboolean append_textview_from_thread(gpointer data)
 // Cuenta los dispositivos
 int contar_dispositivos()
 {
-    int count = 0;
+    // Se extrae el nombre del usuario
+    const char *usuario = getenv("USER");
+
+    if(usuario == NULL)
+    {
+        perror("No se pudo obtener el nombre de usuario");
+        return NULL;
+    }
+
+    // Se crea la direccion
+    char ruta[256];
+    snprintf(ruta, sizeof(ruta), "/media/%s", usuario);
 
     // Se abre la carpeta
-    DIR *dir = opendir("/media/Andriu/");
+    DIR *dir = opendir(ruta);
     struct dirent *entry;
 
-    //
+    int count = 0;
+
     while ((entry = readdir(dir)) != NULL)
     {
         // Se omiten el directorio actual y su padre
