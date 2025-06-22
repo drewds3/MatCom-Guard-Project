@@ -70,8 +70,6 @@ static void iniciar_escaneo_procesos(GtkWidget *widget, gpointer data)
     if(!hilo_pr)
     {
         hilo_pr = g_thread_new("escaneo_pr", monitor_processes, NULL); // Falta cambiar el 1er NULL por el metodo
-        g_thread_join(hilo_pr);
-        hilo_pr = NULL;
     }
 }
 
@@ -83,6 +81,28 @@ void detener_escaneo_procesos(GtkButton *btn, gpointer use_data)
         stop_monitoring_processes();
         g_thread_join(hilo_pr);
         hilo_pr = NULL;
+    }
+}
+
+//----------------------------------Escanear Todo----------------------------------------------
+
+void escanear_todo(GtkButton *btn, gpointer use_data)
+{
+    if(!hilo_usb)
+    {
+        hilo_usb = g_thread_new("escaneo_usb", thread_scanner_usb, NULL);
+    }
+
+    if(!hilo_pr)
+    {
+        hilo_pr = g_thread_new("escaneo_pr", monitor_processes, NULL); // Falta cambiar el 1er NULL por el metodo
+    }
+
+    if(!hilo_lp)
+    {
+        hilo_lp = g_thread_new("escaneo_lp", scan_and_report, NULL);
+        g_thread_join(hilo_lp);
+        hilo_lp = NULL;
     }
 }
 
@@ -186,7 +206,17 @@ int main(int argc, char *argv[])
     GtkTextBuffer *buffer3 = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview_process));
     gtk_text_buffer_set_text(buffer3, "Informes de escaneo de Procesos:\n", -1);
 
-    //-------------------------------Fin------------------------------------------------------------
+    //-------------------------------Escanear Todo--------------------------------------
+
+    // Escanear todo
+    GtkWidget *button_scan_all = gtk_button_new_with_label("Escanear todo");
+    gtk_widget_set_halign(button_scan_all, GTK_ALIGN_CENTER);
+    g_signal_connect(button_scan_all, "clicked", G_CALLBACK(escanear_todo), NULL);
+    gtk_widget_set_size_request(button_scan_all, 100, 40);
+    gtk_box_pack_start(GTK_BOX(box_lp), button_scan_all, FALSE, FALSE, 0);
+
+
+    //------------------------------------Fin------------------------------------------
 
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(window);
@@ -195,5 +225,5 @@ int main(int argc, char *argv[])
     return 0;
 } 
 
-//gcc main.c usb_scanner.c local_port_scanner.c $(pkg-config --cflags --libs gtk+-3.0) -lcjson
+//gcc main.c usb_scanner.c local_port_scanner.c processes_monitoring.c $(pkg-config --cflags --libs gtk+-3.0) -lcjson
 //./a.out

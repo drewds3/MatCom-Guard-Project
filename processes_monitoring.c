@@ -140,7 +140,7 @@ void print_processes(const ProcessInfo* processes, int count, const char* target
           if (strcmp(processes[i].name, target) == 0) { printf("%s detected\n", target); return; }
      }
 }
-// Monitorea los procesos y detecta anomalías
+// Monitorea los procesos y detecta anomalias
 int read_actual_processes(ProcessInfo* processes) {
      DIR* proc_dir = opendir("/proc");
      if (!proc_dir) { return -1; }
@@ -156,7 +156,7 @@ int read_actual_processes(ProcessInfo* processes) {
      return proc_count;
 }
 int stop = 0;
-void *monitor_processes(void *arg) {
+void* monitor_processes(void* arg) {
      printf("Iniciando sistema de monitoreo de procesos...\n");
      ProcessInfo prev_procs[MAX_PROCESSES] = { 0 };
      unsigned long long prev_total_cpu = get_total_cpu_time();
@@ -164,7 +164,7 @@ void *monitor_processes(void *arg) {
      while (!stop) {
           ProcessInfo curr_procs[MAX_PROCESSES];
           int proc_count = read_actual_processes(curr_procs);
-          if (proc_count < 0) { perror("Error abriendo /proc"); exit(EXIT_FAILURE); }
+          if (proc_count < 0) { perror("Error abriendo /proc"); return NULL; }
 
           // Calcular uso de CPU y comparar con iteración anterior
           unsigned long long curr_total_cpu = get_total_cpu_time();
@@ -178,25 +178,28 @@ void *monitor_processes(void *arg) {
 
                           // Detectar picos de uso
                          if (curr_procs[i].cpu_usage > CPU_THRESHOLD) {
-                              printf("[ALERTA CPU] Proceso %d (%s): %.2f%%\n",
+                              PRINT_ALERT("[ALERTA CPU] Proceso %d (%s): %.2f%%\n",
                                    curr_procs[i].pid, curr_procs[i].name, curr_procs[i].cpu_usage);
                          }
                          if (curr_procs[i].mem_usage > MEM_THRESHOLD) {
-                              printf("[ALERTA MEM] Proceso %d (%s): %.2f%%\n",
+                              PRINT_ALERT("[ALERTA MEM] Proceso %d (%s): %.2f%%\n",
                                    curr_procs[i].pid, curr_procs[i].name, curr_procs[i].mem_usage);
                          }
                          break;
                     }
                }
           }
-          print_processes(curr_procs, proc_count, "");
+          // print_processes(curr_procs, proc_count, "");
 
           memcpy(prev_procs, curr_procs, sizeof(ProcessInfo) * MAX_PROCESSES);
           prev_total_cpu = curr_total_cpu;
-
+          
+          g_idle_add(append_textview_from_thread, g_strdup("Ciclo de monitoreo concluido sin alertas.\n\n"));
+          
           sleep(SLEEP_TIME); // Intervalo de monitoreo
      }
 
+     g_idle_add(append_textview_from_thread, g_strdup("Monitoreo de procesos concluido.\n"));
      return NULL;
 }
 void stop_monitoring_processes() { stop = 1; }
